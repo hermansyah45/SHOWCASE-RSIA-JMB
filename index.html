@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSIA JMB - Showcase & Kasir Cloud Realtime</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            green: '#059669',
+                            gold: '#d97706',
+                            orange: '#ea580c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Dexie.js for Offline Local Storage -->
+    <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+        .bg-app-custom {
+            background-image: linear-gradient(to bottom, rgba(255,255,255,0.85), rgba(243,244,246,0.95)), url('Fresh Café Counter with Green Accents.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-receipt, #printable-receipt * { visibility: visible; }
+            #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-app-custom font-sans antialiased text-gray-800 min-h-screen" x-data="appData()" x-init="initApp()">
+
+    <!-- SCREEN 1: LAYAR LOGIN PASSWORD -->
+    <div x-show="!isLoggedIn" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+        <div class="bg-white/95 text-gray-800 rounded-3xl w-full max-w-md p-6 sm:p-8 shadow-2xl border border-gray-200/80 space-y-5 text-center">
+            
+            <div class="space-y-2">
+                <div class="inline-flex bg-gradient-to-r from-emerald-600 via-amber-500 to-orange-500 p-3.5 rounded-2xl shadow-lg text-white mb-1">
+                    <i class="fa-solid fa-hospital text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-black text-gray-800 tracking-wide">RSIA JMB</h2>
+                <p class="text-xs text-gray-500">Jimmy Medika Borneo Showcase & Kasir</p>
+            </div>
+
+            <form @submit.prevent="login()" class="space-y-4 text-left">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Password Akses *</label>
+                    <div class="relative">
+                        <input type="password" x-model="inputPassword" placeholder="Masukkan password..." required class="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none pr-10">
+                        <i class="fa-solid fa-key absolute right-3.5 top-3.5 text-gray-400"></i>
+                    </div>
+                    <!-- KETERANGAN MINTA KE HERMAN -->
+                    <p class="text-[11px] text-amber-600 mt-2 font-medium flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>Lupa password? Silakan tanya ke Herman.</span>
+                    </p>
+                </div>
+
+                <div x-show="loginError" x-cloak class="p-2.5 bg-red-100 text-red-700 rounded-xl text-xs font-medium text-center">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Password salah, silakan coba lagi!
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 via-amber-500 to-orange-500 hover:opacity-95 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span>Masuk Aplikasi</span>
+                </button>
+            </form>
+
+            <div class="border-t border-gray-200 pt-3">
+                <p class="text-[10px] text-gray-400">Sistem Kasir & Showcase Digital Realtime V2.12</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: APLIKASI UTAMA (SETELAH LOGIN) -->
+    <div x-show="isLoggedIn" x-cloak>
+        <!-- Header Banner Image & Navigation -->
+        <header class="sticky top-0 z-30 shadow-lg">
+            <!-- Banner Background Container -->
+            <div class="relative bg-emerald-900 text-white overflow-hidden min-h-[110px] sm:min-h-[140px] flex items-center">
+                <img src="Jimmy Medika Borneo Café Counter (1).png" alt="RSIA JMB Header" class="absolute inset-0 w-full h-full object-cover object-center opacity-85">
+                <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-emerald-950/40 to-transparent"></div>
+
+                <div class="relative max-w-7xl mx-auto px-4 py-3 w-full flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-lg border border-yellow-300/50">
+                            <i class="fa-solid fa-hospital text-emerald-700 text-2xl sm:text-3xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-black text-xl sm:text-2xl tracking-wide text-yellow-300 drop-shadow-md">RSIA JMB</h1>
+                            <p class="text-xs sm:text-sm text-emerald-100 font-medium drop-shadow">Jimmy Medika Borneo Showcase & Kasir Cloud</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2 sm:space-x-3">
+                        <!-- STATUS KETERANGAN TERHUBUNG FIREBASE REALTIME -->
+                        <span :class="firebaseConnected ? 'bg-emerald-600/90 text-white' : 'bg-amber-600/90 text-white'" class="px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md border border-white/20 shadow flex items-center gap-1.5 transition">
+                            <i :class="firebaseConnected ? 'fa-cloud text-yellow-300 animate-pulse' : 'fa-cloud-slash text-amber-200'" class="fa-solid text-sm"></i>
+                            <span x-text="firebaseConnected ? 'Realtime Cloud Active' : 'Mode Lokal (Offline)'"></span>
+                        </span>
+
+                        <!-- Tombol Panduan Netlify -->
+                        <button @click="showNetlifyModal = true" class="p-2.5 bg-black/40 hover:bg-black/60 rounded-xl text-emerald-300 transition shadow backdrop-blur-sm border border-white/10 text-xs" title="Panduan Deploy Netlify">
+                            <i class="fa-solid fa-rocket"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="bg-emerald-950/90 backdrop-blur-md px-4 border-t border-emerald-700/40">
+                <div class="max-w-7xl mx-auto flex space-x-2 overflow-x-auto text-sm py-1.5">
+                    <button @click="activeTab = 'kasir'" :class="activeTab === 'kasir' ? 'bg-gradient-to-r from-emerald-600 to-amber-500 text-white font-bold shadow-md' : 'text-emerald-100 hover:bg-emerald-800/50'" class="px-4 py-2 rounded-xl transition flex items-center space-x-2 whitespace-nowrap">
+                        <i class="fa-solid fa-cash-register"></i>
+                        <span>Kasir (POS)</span>
+                    </button>
+                    <button @click="activeTab = 'showcase'" :class="activeTab === 'showcase' ? 'bg-gradient-to-r from-emerald-600 to-amber-500 text-white font-bold shadow-md' : 'text-emerald-100 hover:bg-emerald-800/50'" class="px-4 py-2 rounded-xl transition flex items-center space-x-2 whitespace-nowrap">
+                        <i class="fa-solid fa-grip"></i>
+                        <span>Showcase RSIA JMB</span>
+                    </button>
+                    <button @click="activeTab = 'produk'" :class="activeTab === 'produk' ? 'bg-gradient-to-r from-emerald-600 to-amber-500 text-white font-bold shadow-md' : 'text-emerald-100 hover:bg-emerald-800/50'" class="px-4 py-2 rounded-xl transition flex items-center space-x-2 whitespace-nowrap">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        <span>Kelola Stok</span>
+                    </button>
+                    <button @click="activeTab = 'riwayat'" :class="activeTab === 'riwayat' ? 'bg-gradient-to-r from-emerald-600 to-amber-500 text-white font-bold shadow-md' : 'text-emerald-100 hover:bg-emerald-800/50'" class="px-4 py-2 rounded-xl transition flex items-center space-x-2 whitespace-nowrap">
+                        <i class="fa-solid fa-receipt"></i>
+                        <span>Riwayat Transaksi</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Application Container -->
+        <main class="max-w-7xl mx-auto p-3 sm:p-5">
+
+            <!-- TAB 1: KASIR (POS) -->
+            <div x-show="activeTab === 'kasir'" class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <!-- Product Grid -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-gray-200/80 flex flex-col sm:flex-row gap-3 justify-between items-center">
+                        <div class="relative w-full sm:w-72">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" x-model="searchKasir" placeholder="Cari nama produk / barcode..." class="w-full pl-9 pr-4 py-2 text-sm bg-gray-50/85 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                        <div class="flex gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                            <button @click="katKasir = 'all'" :class="katKasir === 'all' ? 'bg-amber-500 text-white font-bold' : 'bg-gray-100 text-gray-700'" class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition">Semua</button>
+                            <template x-for="kat in kategoriList" :key="kat">
+                                <button @click="katKasir = kat" :class="katKasir === kat ? 'bg-amber-500 text-white font-bold' : 'bg-gray-100 text-gray-700'" class="px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition" x-text="kat"></button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+                        <template x-for="p in filteredKasirProduk" :key="p.id">
+                            <div class="bg-white/90 backdrop-blur-sm border border-gray-200/80 rounded-2xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between group relative overflow-hidden">
+                                <span x-show="p.stok <= 0" class="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-10">Habis</span>
+                                <div>
+                                    <!-- GAMBAR BISA DIKLIK UNTUK POPUP -->
+                                    <div @click="openImagePreview(p)" class="h-28 sm:h-32 bg-gray-100 rounded-xl overflow-hidden mb-2 relative group-hover:opacity-90">
+                                        <img :src="p.foto || 'https://via.placeholder.com/150?text=No+Image'" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                        <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold">
+                                            <i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Perbesar
+                                        </div>
+                                    </div>
+                                    <div @click="addToCart(p)">
+                                        <h3 class="font-semibold text-gray-800 text-xs sm:text-sm line-clamp-1" x-text="p.nama"></h3>
+                                        <p class="text-[11px] text-gray-500 mb-1" x-text="p.kategori"></p>
+                                    </div>
+                                </div>
+                                <div @click="addToCart(p)" class="mt-2 flex items-center justify-between border-t border-gray-100 pt-2">
+                                    <span class="font-bold text-emerald-600 text-xs sm:text-sm" x-text="formatRupiah(p.harga)"></span>
+                                    <span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-medium" x-text="'Stok: ' + p.stok"></span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Cart Section dengan ID Target Scroll -->
+                <div id="keranjang-kasir-section" class="bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-gray-200/80 p-4 flex flex-col justify-between lg:h-[calc(100vh-140px)] lg:sticky lg:top-36 scroll-mt-36">
+                    <div>
+                        <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                            <h2 class="font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fa-solid fa-cart-shopping text-amber-500"></i> Keranjang Kasir
+                            </h2>
+                            <button @click="cart = []" class="text-xs text-red-500 hover:underline" x-show="cart.length > 0">Kosongkan</button>
+                        </div>
+
+                        <div class="divide-y divide-gray-100 overflow-y-auto max-h-[260px] sm:max-h-[320px] my-2 pr-1">
+                            <template x-for="(item, idx) in cart" :key="item.id">
+                                <div class="py-2.5 flex items-center justify-between text-sm">
+                                    <div class="flex-1 pr-2">
+                                        <h4 class="font-medium text-gray-800 line-clamp-1 text-xs sm:text-sm" x-text="item.nama"></h4>
+                                        <span class="text-[11px] text-gray-500" x-text="formatRupiah(item.harga)"></span>
+                                    </div>
+                                    <div class="flex items-center space-x-1.5">
+                                        <button @click="updateCartQty(idx, -1)" class="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center font-bold text-gray-600 hover:bg-gray-200">-</button>
+                                        <span class="w-6 text-center font-semibold text-xs" x-text="item.qty"></span>
+                                        <button @click="updateCartQty(idx, 1)" class="w-6 h-6 bg-gray-100 rounded-lg flex items-center justify-center font-bold text-gray-600 hover:bg-gray-200">+</button>
+                                    </div>
+                                    <span class="font-semibold text-emerald-600 w-16 text-right text-xs" x-text="formatRupiah(item.harga * item.qty)"></span>
+                                </div>
+                            </template>
+                            <div x-show="cart.length === 0" class="text-center py-10 text-gray-400">
+                                <i class="fa-solid fa-basket-shopping text-4xl mb-2 text-gray-300"></i>
+                                <p class="text-xs">Keranjang transaksi belum terisi</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-3 space-y-3">
+                        <div class="space-y-1.5 text-xs sm:text-sm">
+                            <div class="flex justify-between text-gray-600">
+                                <span>Subtotal</span>
+                                <span class="font-semibold" x-text="formatRupiah(cartSubtotal)"></span>
+                            </div>
+                            <div class="flex justify-between items-center text-gray-600">
+                                <span>Diskon (Rp)</span>
+                                <input type="number" x-model.number="diskon" class="w-28 text-right py-1 px-2 bg-gray-50 border border-gray-200 rounded-lg text-xs">
+                            </div>
+                            <div class="flex justify-between text-sm sm:text-base font-extrabold text-emerald-700 border-t border-gray-200 pt-2">
+                                <span>Total Bayar</span>
+                                <span x-text="formatRupiah(cartTotal)"></span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-xs text-gray-500">Nominal Tunai</label>
+                                <!-- TOMBOL UANG PAS -->
+                                <button @click="setUangPas()" :disabled="cartTotal <= 0" class="text-[11px] bg-amber-500 hover:bg-amber-600 text-white px-2 py-0.5 rounded-lg font-bold transition shadow-sm disabled:opacity-50">
+                                    <i class="fa-solid fa-bolt mr-1"></i> Uang Pas
+                                </button>
+                            </div>
+                            <input type="number" x-model.number="bayar" placeholder="0" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm text-right font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            <div class="flex justify-between text-xs font-semibold pt-1">
+                                <span class="text-gray-500">Kembalian:</span>
+                                <span :class="kembalian < 0 ? 'text-red-500' : 'text-emerald-600'" x-text="formatRupiah(kembalian)"></span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <button @click="prosesBayarOnly()" :disabled="cart.length === 0 || kembalian < 0" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-2 rounded-xl transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Proses Bayar</span>
+                            </button>
+                            <button @click="printCurrentReceipt()" :disabled="!receiptData" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 px-2 rounded-xl transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-1.5" title="Cetak struk dari transaksi terakhir">
+                                <i class="fa-solid fa-print"></i>
+                                <span>Cetak Struk</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: SHOWCASE DIGITAL -->
+            <div x-show="activeTab === 'showcase'" class="space-y-6">
+                <div class="bg-gradient-to-r from-emerald-700 via-amber-600 to-orange-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col sm:flex-row justify-between items-center gap-4 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <span class="bg-yellow-300 text-emerald-950 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block shadow">Katalog Resmi RSIA JMB</span>
+                        <h2 class="text-2xl sm:text-3xl font-black">Showcase Perbekalan & Produk</h2>
+                        <p class="text-sm text-emerald-100 mt-1">Daftar produk, suplemen, dan perbekalan medis RSIA JMB Jimmy Medika Borneo.</p>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 text-center relative z-10">
+                        <span class="block text-3xl font-black text-yellow-300" x-text="produkList.length"></span>
+                        <span class="text-xs uppercase tracking-wider text-emerald-100">Total Item</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <template x-for="p in produkList" :key="p.id">
+                        <div class="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition border border-gray-200/80 flex flex-col justify-between">
+                            <div>
+                                <div @click="openImagePreview(p)" class="h-36 sm:h-44 bg-gray-100 overflow-hidden relative cursor-pointer group">
+                                    <img :src="p.foto || 'https://via.placeholder.com/300?text=No+Image'" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                    <span class="absolute top-2 left-2 bg-emerald-900/80 text-white text-[10px] px-2.5 py-0.5 rounded-full backdrop-blur-sm font-medium z-10" x-text="p.kategori"></span>
+                                    <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold">
+                                        <i class="fa-solid fa-magnifying-glass-plus mr-1"></i> Perbesar
+                                    </div>
+                                </div>
+                                <div class="p-3">
+                                    <h3 class="font-bold text-gray-800 text-sm line-clamp-1" x-text="p.nama"></h3>
+                                    <p class="text-xs text-gray-500 mt-1 line-clamp-2" x-text="p.deskripsi || 'Tidak ada deskripsi'"></p>
+                                </div>
+                            </div>
+                            <div class="p-3 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                                <span class="font-bold text-emerald-600 text-xs sm:text-sm" x-text="formatRupiah(p.harga)"></span>
+                                <span :class="p.stok > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'" class="text-[10px] font-semibold px-2 py-0.5 rounded-full" x-text="p.stok > 0 ? 'Tersedia' : 'Habis'"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- TAB 3: CMS STOK PRODUK -->
+            <div x-show="activeTab === 'produk'" class="space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-gray-200/80 gap-3">
+                    <div>
+                        <h2 class="font-bold text-gray-800 text-base">Manajemen Produk RSIA JMB</h2>
+                        <p class="text-xs text-gray-500">Tambah, ubah, dan kelola stok produk (Dilindungi Password).</p>
+                    </div>
+                    <button @click="authAction('add', null)" class="bg-gradient-to-r from-emerald-600 to-amber-500 hover:opacity-95 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-2 shadow">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Tambah Produk Baru</span>
+                    </button>
+                </div>
+
+                <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-600 text-xs uppercase font-semibold">
+                                    <th class="p-3">Gambar</th>
+                                    <th class="p-3">Barcode</th>
+                                    <th class="p-3">Nama Produk</th>
+                                    <th class="p-3">Kategori</th>
+                                    <th class="p-3">Harga</th>
+                                    <th class="p-3">Stok</th>
+                                    <th class="p-3 text-center">Aksi (Protected)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <template x-for="p in produkList" :key="p.id">
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="p-3">
+                                            <img @click="openImagePreview(p)" :src="p.foto || 'https://via.placeholder.com/50'" class="w-10 h-10 object-cover rounded-xl border cursor-pointer hover:opacity-85 transition" title="Klik untuk memperbesar">
+                                        </td>
+                                        <td class="p-3 font-mono text-xs text-gray-500" x-text="p.barcode || '-'"></td>
+                                        <td class="p-3 font-semibold text-gray-800" x-text="p.nama"></td>
+                                        <td class="p-3 text-xs text-gray-500" x-text="p.kategori"></td>
+                                        <td class="p-3 font-semibold text-emerald-600" x-text="formatRupiah(p.harga)"></td>
+                                        <td class="p-3">
+                                            <span :class="p.stok <= 2 ? 'text-red-600 font-bold' : 'text-gray-700'" x-text="p.stok"></span>
+                                        </td>
+                                        <td class="p-3 text-center space-x-3">
+                                            <button @click="authAction('edit', p)" class="text-amber-500 hover:text-amber-600 font-medium text-xs bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200" title="Edit"><i class="fa-solid fa-pen-to-square mr-1"></i> Edit</button>
+                                            <button @click="authAction('delete', p)" class="text-red-500 hover:text-red-600 font-medium text-xs bg-red-50 px-2.5 py-1 rounded-lg border border-red-200" title="Hapus"><i class="fa-solid fa-trash mr-1"></i> Hapus</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: RIWAYAT TRANSAKSI -->
+            <div x-show="activeTab === 'riwayat'" class="space-y-4">
+                <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-gray-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h2 class="font-bold text-gray-800 text-base">Riwayat Transaksi RSIA JMB</h2>
+                        <p class="text-xs text-gray-500">Daftar rekapan penjualan kasir digital (Dilindungi Password).</p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                        <div class="text-sm font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                            Total Pendapatan: <span x-text="formatRupiah(totalPendapatan)"></span>
+                        </div>
+                        <button @click="authAction('clear-history', null)" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow flex items-center gap-1.5 transition" title="Hapus Semua Riwayat">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>Hapus Riwayat</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white/90 backdrop-blur-md rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-600 text-xs uppercase font-semibold">
+                                    <th class="p-3">ID</th>
+                                    <th class="p-3">Tanggal</th>
+                                    <th class="p-3">Total Belanja</th>
+                                    <th class="p-3">Bayar</th>
+                                    <th class="p-3">Kembali</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <template x-for="t in riwayatList" :key="t.id">
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="p-3 font-mono text-xs text-gray-500" x-text="'#' + (t.id || t.firestoreId)"></td>
+                                        <td class="p-3 text-xs text-gray-600" x-text="formatTanggal(t.waktu)"></td>
+                                        <td class="p-3 font-bold text-emerald-600" x-text="formatRupiah(t.total)"></td>
+                                        <td class="p-3 text-xs text-gray-600" x-text="formatRupiah(t.bayar)"></td>
+                                        <td class="p-3 text-xs text-gray-600" x-text="formatRupiah(t.kembali)"></td>
+                                        <td class="p-3 text-center space-x-2">
+                                            <button @click="printSpecificReceipt(t)" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2.5 py-1 rounded-xl transition">
+                                                <i class="fa-solid fa-print"></i> Struk
+                                            </button>
+                                            <button @click="authAction('delete-history', t.id)" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-2.5 py-1 rounded-xl transition border border-red-200" title="Hapus Riwayat Ini">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- FLOATING CART BUBBLE DI PINGGIR KIRI BAWAH (DENGAN FUNGSI SCROLL OTOMATIS) -->
+    <div class="fixed left-4 bottom-6 z-40" x-show="isLoggedIn">
+        <button @click="scrollToKeranjang()" class="relative group bg-gradient-to-r from-emerald-600 to-amber-500 hover:opacity-95 text-white p-3.5 sm:p-4 rounded-full shadow-2xl flex items-center justify-center transition transform hover:scale-105 border-2 border-white/40">
+            <i class="fa-solid fa-cart-shopping text-xl sm:text-2xl"></i>
+            
+            <!-- BADGE JUMLAH BARANG DI KERANJANG -->
+            <span class="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[11px] font-black w-6 h-6 rounded-full flex items-center justify-center shadow-md border-2 border-white animate-bounce" x-text="totalCartItems" x-show="totalCartItems > 0"></span>
+            
+            <!-- Tooltip Hover -->
+            <span class="absolute left-full ml-3 bg-gray-900/90 text-white text-xs font-semibold px-3 py-1.5 rounded-xl whitespace-nowrap opacity-0 group-hover:opacity-100 transition shadow-lg pointer-events-none backdrop-blur-sm">
+                Ke Keranjang Kasir (<span x-text="totalCartItems"></span> item)
+            </span>
+        </button>
+    </div>
+
+    <!-- MODAL POPUP GAMBAR PROD / SHOWCASE -->
+    <div x-show="showImageModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md" @click="showImageModal = false">
+        <div class="bg-white rounded-3xl w-full max-w-sm sm:max-w-md p-5 shadow-2xl border border-gray-100 text-center relative space-y-4" @click.stop>
+            <button @click="showImageModal = false" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-2">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="font-black text-gray-800 text-base sm:text-lg pr-6 line-clamp-1" x-text="selectedImageProduct?.nama"></h3>
+            
+            <div class="bg-gray-50 rounded-2xl overflow-hidden p-2 flex items-center justify-center max-h-80 sm:max-h-96">
+                <img :src="selectedImageProduct?.foto || 'https://via.placeholder.com/300?text=No+Image'" class="max-h-full max-w-full object-contain rounded-xl">
+            </div>
+
+            <div class="text-left space-y-1 bg-emerald-50/60 p-3 rounded-xl text-xs">
+                <div class="flex justify-between font-bold text-gray-700">
+                    <span x-text="'Kategori: ' + (selectedImageProduct?.kategori || '-')"></span>
+                    <span class="text-emerald-700" x-text="formatRupiah(selectedImageProduct?.harga)"></span>
+                </div>
+                <p class="text-gray-500 text-[11px]" x-text="selectedImageProduct?.deskripsi || 'Tidak ada deskripsi'"></p>
+            </div>
+
+            <button @click="showImageModal = false" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-sm shadow">
+                CLOSE
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL PASSWORD PIN -->
+    <div x-show="showAuthModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="bg-white text-gray-800 rounded-3xl w-full max-w-sm p-6 shadow-2xl space-y-4 border border-gray-200 text-center">
+            <div class="inline-flex bg-amber-100 text-amber-600 p-3 rounded-2xl mb-1">
+                <i class="fa-solid fa-lock text-2xl"></i>
+            </div>
+            <h3 class="font-bold text-lg">Konfirmasi Keamanan</h3>
+            <p class="text-xs text-gray-500">Masukkan Password Akses untuk melanjutkan</p>
+            
+            <form @submit.prevent="verifyAuthPin()" class="space-y-3">
+                <input type="password" x-model="authPinInput" placeholder="Masukkan password..." required class="w-full text-center tracking-widest bg-gray-50 border border-gray-200 rounded-xl p-3 text-base font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                
+                <!-- KETERANGAN LUPA PASSWORD TANYA KE HERMAN -->
+                <p class="text-[11px] text-amber-600 font-medium flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Lupa password? Silakan tanya ke Herman.</span>
+                </p>
+
+                <div x-show="authPinError" x-cloak class="text-red-500 text-xs font-medium">
+                    Password Salah! Coba lagi.
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button type="button" @click="showAuthModal = false; authPinInput = ''" class="py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-semibold">Batal</button>
+                    <button type="submit" class="py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-semibold shadow">Konfirmasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ADD/EDIT PRODUCT -->
+    <div x-show="showModalProduk" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="bg-white text-gray-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl space-y-4 p-5 sm:p-6 max-h-[90vh] overflow-y-auto border border-gray-200">
+            <div class="flex justify-between items-center border-b border-gray-200 pb-3">
+                <h3 class="font-bold text-base sm:text-lg" x-text="formProduk.id ? 'Edit Produk RSIA JMB' : 'Tambah Produk Baru RSIA JMB'"></h3>
+                <button @click="closeModalProduk()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <form @submit.prevent="saveProduk()" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Nama Produk *</label>
+                    <input type="text" x-model="formProduk.nama" required class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Kategori *</label>
+                        <input type="text" x-model="formProduk.kategori" required placeholder="misal: Obat, Suplemen, Umum" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Barcode / SKU</label>
+                        <input type="text" x-model="formProduk.barcode" placeholder="Opsional" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Harga (Rp) *</label>
+                        <input type="number" x-model.number="formProduk.harga" required min="0" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Stok Awal *</label>
+                        <input type="number" x-model.number="formProduk.stok" required min="0" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- PHOTO SOURCE MODES -->
+                <div class="space-y-2 border-t border-gray-200 pt-3">
+                    <label class="block text-xs font-semibold text-gray-600">Foto Produk</label>
+                    
+                    <div class="flex space-x-1 sm:space-x-2 text-xs border-b border-gray-200 pb-2 overflow-x-auto">
+                        <button type="button" @click="photoSource = 'file'; stopCamera()" :class="photoSource === 'file' ? 'bg-amber-100 text-amber-800 font-bold' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition">
+                            <i class="fa-solid fa-upload mr-1"></i> File Lokal
+                        </button>
+                        <button type="button" @click="photoSource = 'camera'; startCamera()" :class="photoSource === 'camera' ? 'bg-amber-100 text-amber-800 font-bold' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition">
+                            <i class="fa-solid fa-camera mr-1"></i> Kamera HP/Webcam
+                        </button>
+                        <button type="button" @click="photoSource = 'url'; stopCamera()" :class="photoSource === 'url' ? 'bg-amber-100 text-amber-800 font-bold' : 'text-gray-500'" class="px-3 py-1.5 rounded-lg whitespace-nowrap transition">
+                            <i class="fa-solid fa-link mr-1"></i> URL Link
+                        </button>
+                    </div>
+
+                    <div x-show="photoSource === 'file'" class="mt-2">
+                        <input type="file" accept="image/*" @change="handleFileUpload($event)" class="text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                    </div>
+
+                    <div x-show="photoSource === 'camera'" class="mt-2 space-y-2">
+                        <div class="relative bg-black rounded-xl overflow-hidden h-44 flex items-center justify-center">
+                            <video x-ref="videoElem" autoplay playsinline class="w-full h-full object-cover"></video>
+                            <canvas x-ref="canvasElem" class="hidden"></canvas>
+                        </div>
+                        <button type="button" @click="captureCamera()" class="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs py-2 rounded-xl font-semibold flex items-center justify-center gap-1 shadow">
+                            <i class="fa-solid fa-circle-dot"></i> Ambil Foto Kamera
+                        </button>
+                    </div>
+
+                    <div x-show="photoSource === 'url'" class="mt-2">
+                        <input type="url" x-model="formProduk.foto" placeholder="https://..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm">
+                    </div>
+
+                    <template x-if="formProduk.foto">
+                        <div class="mt-2 flex items-center space-x-3 bg-gray-50 p-2 rounded-xl border border-gray-200">
+                            <img :src="formProduk.foto" class="w-12 h-12 object-cover rounded-lg border">
+                            <span class="text-xs text-emerald-600 font-medium"><i class="fa-solid fa-check mr-1"></i> Foto Siap Disimpan</span>
+                        </div>
+                    </template>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Deskripsi Singkat</label>
+                    <textarea x-model="formProduk.deskripsi" rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-3 border-t border-gray-200">
+                    <button type="button" @click="closeModalProduk()" class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-sm bg-gradient-to-r from-emerald-600 to-amber-500 text-white rounded-xl font-semibold shadow hover:opacity-95 transition">Simpan Produk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL NETLIFY GUIDE -->
+    <div x-show="showNetlifyModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="bg-white text-gray-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl p-6 space-y-4 border border-gray-200">
+            <div class="flex justify-between items-center border-b border-gray-200 pb-3">
+                <h3 class="font-bold text-lg text-emerald-600 flex items-center gap-2">
+                    <i class="fa-solid fa-rocket"></i> Deploy Online ke Netlify
+                </h3>
+                <button @click="showNetlifyModal = false" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <ol class="list-decimal list-inside space-y-2 text-xs sm:text-sm text-gray-600">
+                <li>Buka situs <a href="https://app.netlify.com" target="_blank" class="text-emerald-600 font-bold underline">Netlify.com</a> dan Login.</li>
+                <li>Buat folder di HP/Komputer Anda, masukkan file <code class="bg-gray-100 px-1 py-0.5 rounded font-mono">index.html</code> dan kedua gambar header/background.</li>
+                <li>Tarik & Lepas (Drag & Drop) folder tersebut ke area upload Netlify.</li>
+                <li>Netlify akan memberikan URL Website Online resmi gratis!</li>
+            </ol>
+
+            <button @click="showNetlifyModal = false" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-sm">Tutup</button>
+        </div>
+    </div>
+
+    <!-- PRINT RECEIPT -->
+    <div id="printable-receipt" class="hidden print:block p-4 max-w-xs mx-auto text-black font-mono text-xs bg-white">
+        <div class="text-center border-b pb-2 mb-2">
+            <h2 class="font-bold text-sm">RSIA JMB</h2>
+            <p class="text-[10px]">Jimmy Medika Borneo</p>
+            <p class="text-[10px]" x-text="receiptData ? formatTanggal(receiptData.waktu) : ''"></p>
+        </div>
+        <div class="divide-y border-b mb-2 pb-2">
+            <template x-if="receiptData">
+                <template x-for="i in receiptData.items" :key="i.id">
+                    <div class="py-1">
+                        <div class="font-bold" x-text="i.nama"></div>
+                        <div class="flex justify-between">
+                            <span x-text="i.qty + ' x ' + formatRupiah(i.harga)"></span>
+                            <span x-text="formatRupiah(i.qty * i.harga)"></span>
+                        </div>
+                    </div>
+                </template>
+            </template>
+        </div>
+        <template x-if="receiptData">
+            <div class="space-y-1">
+                <div class="flex justify-between"><span>Subtotal:</span><span x-text="formatRupiah(receiptData.subtotal)"></span></div>
+                <div class="flex justify-between"><span>Diskon:</span><span x-text="formatRupiah(receiptData.diskon)"></span></div>
+                <div class="flex justify-between font-bold border-t pt-1"><span>TOTAL:</span><span x-text="formatRupiah(receiptData.total)"></span></div>
+                <div class="flex justify-between"><span>Bayar:</span><span x-text="formatRupiah(receiptData.bayar)"></span></div>
+                <div class="flex justify-between"><span>Kembali:</span><span x-text="formatRupiah(receiptData.kembali)"></span></div>
+            </div>
+        </template>
+        <div class="text-center mt-4 text-[10px]">
+            <p>Terima Kasih Atas Kunjungan Anda</p>
+            <p>RSIA JMB - Sehat Bersama Kami</p>
+        </div>
+    </div>
+
+    <!-- FIREBASE INITIALIZATION & APPLICATION CODE -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA9mIpqGT0veAfkjOl7EkYVv5ONn4kNYvg",
+            authDomain: "showcasae.firebaseapp.com",
+            projectId: "showcasae",
+            storageBucket: "showcasae.firebasestorage.app",
+            messagingSenderId: "131951579874",
+            appId: "1:131951579874:web:e76d82d07585e8b47484bb",
+            measurementId: "G-Z5ZE3QEM94"
+        };
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const dbCloud = getFirestore(app);
+
+            window.dbCloud = dbCloud;
+            window.cloudCollections = { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot };
+            
+            window.dispatchEvent(new Event('firebase-ready'));
+        } catch (error) {
+            console.error("Firebase init failed:", error);
+        }
+    </script>
+
+    <script>
+        const db = new Dexie('RSIAJMB_DB');
+        db.version(1).stores({
+            produk: '++id, nama, kategori, barcode, firestoreId',
+            transaksi: '++id, waktu, firestoreId'
+        });
+
+        function appData() {
+            return {
+                isLoggedIn: localStorage.getItem('rsia_jmb_auth') === 'true',
+                inputPassword: '',
+                loginError: false,
+                activeTab: 'kasir',
+                isOnline: navigator.onLine,
+                firebaseConnected: false,
+                showNetlifyModal: false,
+                
+                // VARIABLE MODAL GAMBAR PREVIEW
+                showImageModal: false,
+                selectedImageProduct: null,
+
+                produkList: [],
+                riwayatList: [],
+                cart: [],
+                searchKasir: '',
+                katKasir: 'all',
+                diskon: 0,
+                bayar: 0,
+                
+                // AUTH PIN VARIABLES
+                showAuthModal: false,
+                authPinInput: '',
+                authPinError: false,
+                pendingAction: null,
+                pendingTarget: null,
+
+                showModalProduk: false,
+                photoSource: 'file',
+                mediaStream: null,
+                receiptData: null,
+                formProduk: { id: null, nama: '', kategori: '', harga: 0, stok: 0, barcode: '', foto: '', deskripsi: '', firestoreId: null },
+
+                async initApp() {
+                    window.addEventListener('online', () => this.isOnline = true);
+                    window.addEventListener('offline', () => this.isOnline = false);
+
+                    window.addEventListener('firebase-ready', () => {
+                        this.firebaseConnected = true;
+                        if(this.isLoggedIn) this.syncWithFirebase();
+                    });
+
+                    if (window.dbCloud) {
+                        this.firebaseConnected = true;
+                        if(this.isLoggedIn) this.syncWithFirebase();
+                    }
+
+                    await this.loadProduk();
+                    await this.loadRiwayat();
+
+                    if (this.produkList.length === 0) {
+                        await this.resetSampleData();
+                    }
+                },
+
+                // FUNGSI UNTUK PINDAH KE TAB KASIR DAN AUTOSCROLL KE KERANJANG
+                scrollToKeranjang() {
+                    this.activeTab = 'kasir';
+                    this.$nextTick(() => {
+                        const target = document.getElementById('keranjang-kasir-section');
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                },
+
+                openImagePreview(produk) {
+                    this.selectedImageProduct = produk;
+                    this.showImageModal = true;
+                },
+
+                login() {
+                    if (this.inputPassword === 'JMB1123') {
+                        this.isLoggedIn = true;
+                        this.loginError = false;
+                        localStorage.setItem('rsia_jmb_auth', 'true');
+                        this.syncWithFirebase();
+                    } else {
+                        this.loginError = true;
+                    }
+                },
+
+                syncWithFirebase() {
+                    if (window.dbCloud && window.cloudCollections) {
+                        const { collection, onSnapshot } = window.cloudCollections;
+
+                        onSnapshot(collection(window.dbCloud, "produk"), async (snapshot) => {
+                            for (let change of snapshot.docChanges()) {
+                                const data = change.doc.data();
+                                const fId = change.doc.id;
+
+                                if (change.type === "added" || change.type === "modified") {
+                                    const exist = await db.produk.where('firestoreId').equals(fId).first();
+                                    if (exist) {
+                                        await db.produk.update(exist.id, { ...data, firestoreId: fId });
+                                    } else {
+                                        const checkByName = await db.produk.where('nama').equals(data.nama).first();
+                                        if (checkByName && !checkByName.firestoreId) {
+                                            await db.produk.update(checkByName.id, { ...data, firestoreId: fId });
+                                        } else if (!checkByName) {
+                                            await db.produk.add({ ...data, firestoreId: fId });
+                                        }
+                                    }
+                                } else if (change.type === "removed") {
+                                    const exist = await db.produk.where('firestoreId').equals(fId).first();
+                                    if (exist) await db.produk.delete(exist.id);
+                                }
+                            }
+                            await this.loadProduk();
+                        }, (error) => {
+                            console.error("Firestore sync error:", error);
+                        });
+
+                        onSnapshot(collection(window.dbCloud, "transaksi"), async (snapshot) => {
+                            for (let change of snapshot.docChanges()) {
+                                const data = change.doc.data();
+                                const fId = change.doc.id;
+
+                                if (change.type === "added") {
+                                    const exist = await db.transaksi.where('firestoreId').equals(fId).first();
+                                    if (!exist) {
+                                        await db.transaksi.add({ ...data, firestoreId: fId });
+                                    }
+                                } else if (change.type === "removed") {
+                                    const exist = await db.transaksi.where('firestoreId').equals(fId).first();
+                                    if (exist) await db.transaksi.delete(exist.id);
+                                }
+                            }
+                            await this.loadRiwayat();
+                        });
+                    }
+                },
+
+                async loadProduk() {
+                    this.produkList = await db.produk.toArray();
+                },
+
+                async loadRiwayat() {
+                    this.riwayatList = await db.transaksi.reverse().toArray();
+                },
+
+                get kategoriList() {
+                    const list = this.produkList.map(p => p.kategori).filter(Boolean);
+                    return [...new Set(list)];
+                },
+
+                get filteredKasirProduk() {
+                    return this.produkList.filter(p => {
+                        const matchCat = this.katKasir === 'all' || p.kategori === this.katKasir;
+                        const matchSearch = p.nama.toLowerCase().includes(this.searchKasir.toLowerCase()) || 
+                                            (p.barcode && p.barcode.includes(this.searchKasir));
+                        return matchCat && matchSearch;
+                    });
+                },
+
+                get totalCartItems() {
+                    return this.cart.reduce((sum, item) => sum + item.qty, 0);
+                },
+
+                get cartSubtotal() {
+                    return this.cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+                },
+
+                get cartTotal() {
+                    return Math.max(0, this.cartSubtotal - (this.diskon || 0));
+                },
+
+                get kembalian() {
+                    return (this.bayar || 0) - this.cartTotal;
+                },
+
+                get totalPendapatan() {
+                    return this.riwayatList.reduce((sum, t) => sum + t.total, 0);
+                },
+
+                // FUNGSI TOMBOL UANG PAS
+                setUangPas() {
+                    this.bayar = this.cartTotal;
+                },
+
+                addToCart(produk) {
+                    if (produk.stok <= 0) return alert('Stok produk habis!');
+                    const exist = this.cart.find(i => i.id === produk.id);
+                    if (exist) {
+                        if (exist.qty >= produk.stok) return alert('Jumlah melebihi stok yang ada!');
+                        exist.qty++;
+                    } else {
+                        this.cart.push({ ...produk, qty: 1 });
+                    }
+                },
+
+                updateCartQty(idx, change) {
+                    const item = this.cart[idx];
+                    const targetQty = item.qty + change;
+                    const dbProd = this.produkList.find(p => p.id === item.id);
+
+                    if (targetQty <= 0) {
+                        this.cart.splice(idx, 1);
+                    } else if (dbProd && targetQty > dbProd.stok) {
+                        alert('Jumlah melebihi stok!');
+                    } else {
+                        item.qty = targetQty;
+                    }
+                },
+
+                async prosesBayarOnly() {
+                    if (this.cart.length === 0 || this.kembalian < 0) return;
+
+                    const transaksiBaru = {
+                        waktu: new Date().toISOString(),
+                        items: JSON.parse(JSON.stringify(this.cart)),
+                        subtotal: this.cartSubtotal,
+                        diskon: this.diskon,
+                        total: this.cartTotal,
+                        bayar: this.bayar,
+                        kembali: this.kembalian
+                    };
+
+                    const txId = await db.transaksi.add(transaksiBaru);
+                    transaksiBaru.id = txId;
+
+                    for (let item of this.cart) {
+                        const prod = await db.produk.get(item.id);
+                        if (prod) {
+                            const newStok = Math.max(0, prod.stok - item.qty);
+                            await db.produk.update(item.id, { stok: newStok });
+
+                            if (window.dbCloud && prod.firestoreId) {
+                                const { doc, updateDoc } = window.cloudCollections;
+                                try {
+                                    await updateDoc(doc(window.dbCloud, "produk", prod.firestoreId), { stok: newStok });
+                                } catch (e) { console.error(e); }
+                            }
+                        }
+                    }
+
+                    if (window.dbCloud) {
+                        const { collection, addDoc } = window.cloudCollections;
+                        try {
+                            const docRef = await addDoc(collection(window.dbCloud, "transaksi"), transaksiBaru);
+                            await db.transaksi.update(txId, { firestoreId: docRef.id });
+                        } catch (e) { console.error(e); }
+                    }
+
+                    this.receiptData = transaksiBaru;
+                    this.cart = [];
+                    this.diskon = 0;
+                    this.bayar = 0;
+                    await this.loadProduk();
+                    await this.loadRiwayat();
+
+                    alert('Pembayaran berhasil diproses! Anda dapat mencetak struk menggunakan tombol Cetak Struk.');
+                },
+
+                printCurrentReceipt() {
+                    if (!this.receiptData) {
+                        alert('Belum ada transaksi yang diproses pada sesi ini.');
+                        return;
+                    }
+                    setTimeout(() => window.print(), 200);
+                },
+
+                printSpecificReceipt(tx) {
+                    this.receiptData = tx;
+                    setTimeout(() => window.print(), 200);
+                },
+
+                authAction(actionType, target = null) {
+                    this.pendingAction = actionType;
+                    this.pendingTarget = target;
+                    this.authPinInput = '';
+                    this.authPinError = false;
+                    this.showAuthModal = true;
+                },
+
+                verifyAuthPin() {
+                    if (this.authPinInput === '1234') {
+                        this.showAuthModal = false;
+                        const action = this.pendingAction;
+                        const target = this.pendingTarget;
+                        
+                        this.pendingAction = null;
+                        this.pendingTarget = null;
+
+                        if (action === 'add') {
+                            this.openModalProduk(null);
+                        } else if (action === 'edit') {
+                            this.openModalProduk(target);
+                        } else if (action === 'delete') {
+                            this.deleteProdukConfirmed(target.id);
+                        } else if (action === 'delete-history') {
+                            this.hapusSatuRiwayatConfirmed(target);
+                        } else if (action === 'clear-history') {
+                            this.hapusSemuaRiwayatConfirmed();
+                        }
+                    } else {
+                        this.authPinError = true;
+                    }
+                },
+
+                async hapusSatuRiwayatConfirmed(id) {
+                    if (confirm('Yakin ingin menghapus riwayat transaksi ini?')) {
+                        const tx = await db.transaksi.get(id);
+                        if (tx && tx.firestoreId && window.dbCloud) {
+                            const { doc, deleteDoc } = window.cloudCollections;
+                            try {
+                                await deleteDoc(doc(window.dbCloud, "transaksi", tx.firestoreId));
+                            } catch (e) { console.error(e); }
+                        }
+                        await db.transaksi.delete(id);
+                        await this.loadRiwayat();
+                    }
+                },
+
+                async hapusSemuaRiwayatConfirmed() {
+                    if (confirm('PERINGATAN: Semua riwayat transaksi akan dihapus permanen! Lanjutkan?')) {
+                        const allTx = await db.transaksi.toArray();
+                        for (let tx of allTx) {
+                            if (tx.firestoreId && window.dbCloud) {
+                                const { doc, deleteDoc } = window.cloudCollections;
+                                try {
+                                    await deleteDoc(doc(window.dbCloud, "transaksi", tx.firestoreId));
+                                } catch (e) { console.error(e); }
+                            }
+                        }
+                        await db.transaksi.clear();
+                        await this.loadRiwayat();
+                    }
+                },
+
+                openModalProduk(produk = null) {
+                    if (produk) {
+                        this.formProduk = JSON.parse(JSON.stringify(produk));
+                    } else {
+                        this.formProduk = { id: null, nama: '', kategori: '', harga: 0, stok: 0, barcode: '', foto: '', deskripsi: '', firestoreId: null };
+                    }
+                    this.photoSource = 'file';
+                    this.showModalProduk = true;
+                },
+
+                closeModalProduk() {
+                    this.stopCamera();
+                    this.showModalProduk = false;
+                },
+
+                handleFileUpload(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            this.formProduk.foto = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                },
+
+                async startCamera() {
+                    try {
+                        this.mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                        if (this.$refs.videoElem) {
+                            this.$refs.videoElem.srcObject = this.mediaStream;
+                        }
+                    } catch (err) {
+                        alert('Tidak dapat mengakses kamera: ' + err.message);
+                    }
+                },
+
+                captureCamera() {
+                    const video = this.$refs.videoElem;
+                    const canvas = this.$refs.canvasElem;
+                    if (!video || !canvas) return;
+                    canvas.width = video.videoWidth || 300;
+                    canvas.height = video.videoHeight || 300;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    this.formProduk.foto = canvas.toDataURL('image/jpeg');
+                    alert('Foto berhasil diambil!');
+                },
+
+                stopCamera() {
+                    if (this.mediaStream) {
+                        this.mediaStream.getTracks().forEach(track => track.stop());
+                        this.mediaStream = null;
+                    }
+                },
+
+                async saveProduk() {
+                    try {
+                        if (this.photoSource === 'camera' && this.mediaStream && !this.formProduk.foto) {
+                            this.captureCamera();
+                        }
+
+                        const dataToSave = {
+                            nama: this.formProduk.nama,
+                            kategori: this.formProduk.kategori,
+                            harga: Number(this.formProduk.harga) || 0,
+                            stok: Number(this.formProduk.stok) || 0,
+                            barcode: this.formProduk.barcode || '',
+                            foto: this.formProduk.foto || '',
+                            deskripsi: this.formProduk.deskripsi || ''
+                        };
+
+                        if (window.dbCloud && window.cloudCollections) {
+                            const { collection, addDoc, doc, updateDoc } = window.cloudCollections;
+                            if (this.formProduk.firestoreId) {
+                                dataToSave.firestoreId = this.formProduk.firestoreId;
+                                await updateDoc(doc(window.dbCloud, "produk", this.formProduk.firestoreId), dataToSave);
+                                if (this.formProduk.id) {
+                                    await db.produk.update(this.formProduk.id, dataToSave);
+                                }
+                            } else {
+                                const docRef = await addDoc(collection(window.dbCloud, "produk"), dataToSave);
+                                dataToSave.firestoreId = docRef.id;
+                                const exist = await db.produk.where('firestoreId').equals(docRef.id).first();
+                                if (!exist) {
+                                    await db.produk.add(dataToSave);
+                                }
+                            }
+                        } else {
+                            if (this.formProduk.id) {
+                                await db.produk.update(this.formProduk.id, dataToSave);
+                            } else {
+                                await db.produk.add(dataToSave);
+                            }
+                        }
+
+                        this.closeModalProduk();
+                        await this.loadProduk();
+                    } catch (error) {
+                        alert('Gagal menyimpan produk: ' + error.message);
+                    }
+                },
+
+                async deleteProdukConfirmed(id) {
+                    if (confirm('Yakin ingin menghapus produk ini?')) {
+                        const prod = await db.produk.get(id);
+                        if (prod && prod.firestoreId && window.dbCloud) {
+                            const { doc, deleteDoc } = window.cloudCollections;
+                            try {
+                                await deleteDoc(doc(window.dbCloud, "produk", prod.firestoreId));
+                            } catch (e) { console.error(e); }
+                        }
+
+                        await db.produk.delete(id);
+                        await this.loadProduk();
+                    }
+                },
+
+                formatRupiah(num) {
+                    return 'Rp ' + (num || 0).toLocaleString('id-ID');
+                },
+
+                formatTanggal(isoStr) {
+                    if (!isoStr) return '-';
+                    const d = new Date(isoStr);
+                    return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
